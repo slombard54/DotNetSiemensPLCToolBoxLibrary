@@ -3,19 +3,16 @@
  */
 
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
-using System.Diagnostics;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
 using DotNetSiemensPLCToolBoxLibrary.DBF.Enums;
-using DotNetSiemensPLCToolBoxLibrary.DBF.Index.MDX;
 using DotNetSiemensPLCToolBoxLibrary.DBF.Structures;
 using DotNetSiemensPLCToolBoxLibrary.DBF.Structures.DBT;
 using DotNetSiemensPLCToolBoxLibrary.General;
+using System;
+using System.Collections;
+using System.Data;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace DotNetSiemensPLCToolBoxLibrary.DBF
 {
@@ -34,8 +31,6 @@ namespace DotNetSiemensPLCToolBoxLibrary.DBF
             long start = DateTime.Now.Ticks;
             DataTable dt = new DataTable();
             BinaryReader recReader;
-            DataRow row;
-            int fieldIndex;
 
             // If there isn't even a file, just return an empty DataTable
             if ((false == _ziphelper.FileExists(dbfFile)))
@@ -53,155 +48,36 @@ namespace DotNetSiemensPLCToolBoxLibrary.DBF
             try
             {
                 // Read the header into a buffer
-                //br = new BinaryReader(new FileStream(dbfFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
-
-                Stream tmpStream = _ziphelper.GetReadStream(dbfFile);
-                br = new BinaryReader(tmpStream);
-                byte[] completeBuffer = br.ReadBytes((int)_ziphelper.GetStreamLength(dbfFile, tmpStream));
-                tmpStream.Close();
-                br.Close();
-                br = new BinaryReader(new MemoryStream(completeBuffer));
-
-                byte[] buffer = br.ReadBytes(Marshal.SizeOf(typeof(DBFHeader)));
-                
-
-                // Marshall the header into a DBFHeader structure
-                GCHandle handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-                DBFHeader header = (DBFHeader)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(DBFHeader));
-                handle.Free();
-
-                // Read in all the field descriptors. Per the spec, 13 (0D) marks the end of the field descriptors
-                ArrayList fields = new ArrayList();
-                
-                while ((13 != br.PeekChar()))
+                using (Stream tmpStream = _ziphelper.GetReadStream(dbfFile))
                 {
-                    buffer = br.ReadBytes(Marshal.SizeOf(typeof(FieldDescriptor)));
-                    handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-                    fields.Add((FieldDescriptor)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(FieldDescriptor)));
-                    handle.Free();
-                }
-
-                // Read in the first row of records, we need this to help determine column types below
-                (br.BaseStream).Seek(header.headerLen + 1, SeekOrigin.Begin);
-                buffer = br.ReadBytes(header.recordLen);
-                recReader = new BinaryReader(new MemoryStream(buffer));
-
-                // Create the columns in our new DataTable
-                DataColumn col = null;
-
-                dt.Columns.Add(new DataColumn("DELETED_FLAG", typeof(bool)));
-
-                foreach (FieldDescriptor field in fields)
-                {
-                    byte[] NumberByteArray = recReader.ReadBytes(field.fieldLen);
-                    switch (field.fieldType)
+                    //BinaryReader zipbr = new BinaryReader(tmpStream);
+                    using (br = new BinaryReader(tmpStream))
                     {
-                        case dBaseType.N:
-                            if (dBaseConverter.N_IsDecimal(NumberByteArray)){
-                                col = new DataColumn(field.fieldName, typeof(decimal));
-                            }else{
-                                col = new DataColumn(field.fieldName, typeof(int));
-                            }
-                            break;
-                        case dBaseType.C:
-                            col = new DataColumn(field.fieldName, typeof(string));
-                            break;
-                        case dBaseType.T:
-                            col = new DataColumn(field.fieldName, typeof(DateTime));
-                            break;
-                        case dBaseType.D:
-                            col = new DataColumn(field.fieldName, typeof(DateTime));
-                            break;
-                        case dBaseType.L:
-                            col = new DataColumn(field.fieldName, typeof(bool));
-                            break;
-                        case dBaseType.F:
-                            col = new DataColumn(field.fieldName, typeof(Double));
-                            break;
-                        case dBaseType.M:
-                            //Field Type Memo...
-                            col = new DataColumn(field.fieldName, typeof(byte[]));
-                            break;
-                    }
-                    dt.Columns.Add(col);
-                }
-
-                // Skip past the end of the header. 
-                (br.BaseStream).Seek(header.headerLen, SeekOrigin.Begin);
-
-                // Read in all the records
-                for (int counter = 0; counter <= header.numRecords - 1; counter++)
-                {
-                    // First we'll read the entire record into a buffer and then read each field from the buffer
-                    // This helps account for any extra space at the end of each record and probably performs better
-                    buffer = br.ReadBytes(header.recordLen);
-                    recReader = new BinaryReader(new MemoryStream(buffer));
-
-                    // All dbf field records begin with a deleted flag field. Deleted - 0x2A (asterisk) else 0x20 (space)
-                    //if (recReader.ReadChar() == '*')
-                    //{
-                    //	continue;
-                    //}
 
 
-                    // Loop through each field in a record
-                    fieldIndex = 0;
-                    row = dt.NewRow();
+                        DBFHeader header = ReadDBFHeader(br);
 
-                    char delflg = recReader.ReadChar();
-                    if (delflg == '*')
-                        row[0] = true;
-                    else
-                        row[0] = false;
+                        // Read in all the field descriptors. Per the spec, 13 (0D) marks the end of the field descriptors
+                        ArrayList fields = ReadDBFFields(br);
 
+                        dt = FillColumnsInDataTable(dt, br, header, fields);
 
-                    foreach (FieldDescriptor field in fields)
-                    {
-                        switch (field.fieldType)
+                        byte[] buffer = null;
+                        // Skip past the end of the header. 
+                        (br.BaseStream).Seek(header.headerLen, SeekOrigin.Begin);
+
+                        // Read in all the records
+                        for (int counter = 0; counter <= header.numRecords - 1; counter++)
                         {
-                            case dBaseType.N:  // Number
-                                byte[] NumberBytes = recReader.ReadBytes(field.fieldLen);
-                                if (dBaseConverter.N_IsDecimal(NumberBytes)) {
-                                    row[fieldIndex + 1] = dBaseConverter.N_ToDecimal(NumberBytes);
-                                } else {
-                                    row[fieldIndex + 1] = dBaseConverter.N_ToInt(NumberBytes);
-                                }
-                                break;
-
-                            case dBaseType.C: // String
-							    row[fieldIndex + 1] = dBaseConverter.C_ToString( recReader.ReadBytes(field.fieldLen));
-								break;
-
-                            case dBaseType.M: // Memo
-                                row[fieldIndex + 1] = ReadMemoBlock(dBaseConverter.N_ToInt(recReader.ReadBytes(field.fieldLen)));
-                                break;
-
-                            case dBaseType.D: // Date (YYYYMMDD)
-                                DateTime DTFromFile = dBaseConverter.D_ToDateTime(recReader.ReadBytes(8));
-                                if (DTFromFile == DateTime.MinValue) {
-                                    row[fieldIndex + 1] = System.DBNull.Value;
-                                } else {
-                                    row[fieldIndex] = DTFromFile;
-                                }
-                                break;
-
-                            case dBaseType.T:
-                                row[fieldIndex + 1] = dBaseConverter.T_ToDateTime(recReader.ReadBytes(8));
-                                break;
-
-                            case dBaseType.L: // Boolean (Y/N)
-                                row[fieldIndex + 1] = dBaseConverter.L_ToBool(recReader.ReadByte());
-                                break;
-
-                            case dBaseType.F:
-                                row[fieldIndex + 1] = dBaseConverter.F_ToDouble(recReader.ReadBytes(field.fieldLen));
-                                break;
+                            // First we'll read the entire record into a buffer and then read each field from the buffer
+                            // This helps account for any extra space at the end of each record and probably performs better
+                            buffer = br.ReadBytes(header.recordLen);
+                            using (recReader = new BinaryReader(new MemoryStream(buffer)))
+                            {
+                                FillRow(ref dt, fields, recReader);
+                            }
                         }
-                        fieldIndex++;
                     }
-
-                    recReader.Close();
-                    dt.Rows.Add(row);
                 }
             }
 
@@ -211,11 +87,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.DBF
             }
             finally
             {
-                if (null != br)
-                {
-                    br.Close();
-                }
-
+             
                 if (dbtReader != null)
                 {
                     dbtReader.Close();
@@ -226,6 +98,162 @@ namespace DotNetSiemensPLCToolBoxLibrary.DBF
             long count = DateTime.Now.Ticks - start;
 
             return dt;
+        }
+
+        private static void FillRow(ref DataTable dt,  ArrayList fields, BinaryReader recReader)
+        {
+
+            DataRow _row = dt.NewRow();
+
+            
+            // Loop through each field in a record
+            int fieldIndex = 0;
+
+            // All dbf field records begin with a deleted flag field. Deleted - 0x2A (asterisk) else 0x20 (space)
+            char delflg = recReader.ReadChar();
+            if (delflg == '*')
+                _row[0] = true;
+            else
+                _row[0] = false;
+
+
+            foreach (FieldDescriptor field in fields)
+            {
+                switch (field.fieldType)
+                {
+                    case dBaseType.N:  // Number
+                        byte[] NumberBytes = recReader.ReadBytes(field.fieldLen);
+                        if (dBaseConverter.N_IsDecimal(NumberBytes))
+                        {
+                            _row[fieldIndex + 1] = dBaseConverter.N_ToDecimal(NumberBytes);
+                        }
+                        else
+                        {
+                            _row[fieldIndex + 1] = dBaseConverter.N_ToInt(NumberBytes);
+                        }
+                        break;
+
+                    case dBaseType.C: // String
+                        _row[fieldIndex + 1] = dBaseConverter.C_ToString(recReader.ReadBytes(field.fieldLen));
+                        break;
+
+                    case dBaseType.M: // Memo
+                        _row[fieldIndex + 1] = ReadMemoBlock(dBaseConverter.N_ToInt(recReader.ReadBytes(field.fieldLen)));
+                        break;
+
+                    case dBaseType.D: // Date (YYYYMMDD)
+                        DateTime DTFromFile = dBaseConverter.D_ToDateTime(recReader.ReadBytes(8));
+                        if (DTFromFile == DateTime.MinValue)
+                        {
+                            _row[fieldIndex + 1] = System.DBNull.Value;
+                        }
+                        else
+                        {
+                            _row[fieldIndex] = DTFromFile;
+                        }
+                        break;
+
+                    case dBaseType.T:
+                        _row[fieldIndex + 1] = dBaseConverter.T_ToDateTime(recReader.ReadBytes(8));
+                        break;
+
+                    case dBaseType.L: // Boolean (Y/N)
+                        _row[fieldIndex + 1] = dBaseConverter.L_ToBool(recReader.ReadByte());
+                        break;
+
+                    case dBaseType.F:
+                        _row[fieldIndex + 1] = dBaseConverter.F_ToDouble(recReader.ReadBytes(field.fieldLen));
+                        break;
+                }
+                fieldIndex++;
+            }
+            dt.Rows.Add(_row);
+        }
+
+        private static DataTable FillColumnsInDataTable(DataTable dt, BinaryReader br, DBFHeader header, ArrayList fields)
+        {
+            // Read in the first row of records, we need this to help determine column types below
+            (br.BaseStream).Seek(header.headerLen + 1, SeekOrigin.Begin);
+            
+           // Create the columns in our new DataTable
+            DataColumn col = null;
+
+            dt.Columns.Add(new DataColumn("DELETED_FLAG", typeof(bool)));
+
+            foreach (FieldDescriptor field in fields)
+            {
+                byte[] NumberByteArray = br.ReadBytes(field.fieldLen);
+                switch (field.fieldType)
+                {
+                    case dBaseType.N:
+                        if (dBaseConverter.N_IsDecimal(NumberByteArray))
+                        {
+                            col = new DataColumn(field.fieldName, typeof(decimal));
+                        }
+                        else
+                        {
+                            col = new DataColumn(field.fieldName, typeof(int));
+                        }
+                        break;
+                    case dBaseType.C:
+                        col = new DataColumn(field.fieldName, typeof(string));
+                        break;
+                    case dBaseType.T:
+                        col = new DataColumn(field.fieldName, typeof(DateTime));
+                        break;
+                    case dBaseType.D:
+                        col = new DataColumn(field.fieldName, typeof(DateTime));
+                        break;
+                    case dBaseType.L:
+                        col = new DataColumn(field.fieldName, typeof(bool));
+                        break;
+                    case dBaseType.F:
+                        col = new DataColumn(field.fieldName, typeof(Double));
+                        break;
+                    case dBaseType.M:
+                        //Field Type Memo...
+                        col = new DataColumn(field.fieldName, typeof(byte[]));
+                        break;
+                }
+                dt.Columns.Add(col);
+            }
+            return dt;
+        }
+
+        private static ArrayList ReadDBFFields(BinaryReader br)
+        {
+            byte[] buffer = null;
+            ArrayList fields = new ArrayList();
+            while ((13 != br.PeekChar()))
+            {
+                buffer = br.ReadBytes(Marshal.SizeOf(typeof(FieldDescriptor)));
+                var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+                fields.Add((FieldDescriptor)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(FieldDescriptor)));
+                handle.Free();
+            }
+            return fields;
+        }
+
+        private static DBFHeader ReadDBFHeader(BinaryReader br)
+        {
+            // Read in header one item at a time
+            DBFHeader header = new DBFHeader();
+            header.version = br.ReadByte();
+            header.updateYear = br.ReadByte();
+            header.updateMonth = br.ReadByte();
+            header.updateDay = br.ReadByte();
+            header.numRecords = br.ReadInt32();
+            header.headerLen = br.ReadInt16();
+            header.recordLen = br.ReadInt16();
+            header.reserved1 = br.ReadInt16();
+            header.incompleteTrans = br.ReadByte();
+            header.encryptionFlag = br.ReadByte();
+            header.reserved2 = br.ReadInt32();
+            header.reserved3 = br.ReadInt64();
+            header.MDX = br.ReadByte();
+            header.language = br.ReadByte();
+            header.reserved4 = br.ReadInt16();
+            return header;
         }
         #endregion
 
@@ -401,7 +429,6 @@ namespace DotNetSiemensPLCToolBoxLibrary.DBF
                         default:
                             //br.Close();
                             return false;
-                            break;
                     }
                 }
 

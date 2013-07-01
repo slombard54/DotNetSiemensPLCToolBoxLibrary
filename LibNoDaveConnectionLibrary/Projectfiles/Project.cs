@@ -14,7 +14,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.Projectfiles
         public String ProjectName { get; set; }
         public String ProjectDescription { get; set; }
 
-        private ProjectFolder _ProjectStructure;
+        private ProjectFolder _projectStructure;
         
         public MnemonicLanguage ProjectLanguage { get; set; }
         public Encoding ProjectEncoding = Encoding.GetEncoding("ISO-8859-1");
@@ -25,9 +25,9 @@ namespace DotNetSiemensPLCToolBoxLibrary.Projectfiles
             {
                 if (!_projectLoaded)
                     LoadProject();
-                return _ProjectStructure;
+                return _projectStructure;
             }
-            set { _ProjectStructure = value; }
+            set { _projectStructure = value; }
         }
         internal bool _projectLoaded;
         internal abstract void LoadProject();

@@ -22,7 +22,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
 
             if (((Step7ProjectV5)Project)._ziphelper.FileExists(Folder + "S7CONTAI.DBF"))
             {
-                var dbfTbl = DBF.ParseDBF.ReadDBF(Folder + "S7CONTAI.DBF", ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project)._DirSeperator);
+                var dbfTbl = DBF.ParseDBF.ReadDBF(Folder + "S7CONTAI.DBF", ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project).DirSeperator);
                 foreach (DataRow row in dbfTbl.Rows)
                 {
                     if (!(bool)row["DELETED_FLAG"] || showDeleted)

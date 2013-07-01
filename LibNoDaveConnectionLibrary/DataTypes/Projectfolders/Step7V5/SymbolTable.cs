@@ -9,7 +9,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
     public class SymbolTable : Step7ProjectFolder, ISymbolTable
     {
         public String Folder { get; set; }
-
+        private bool isLoaded;
         private Dictionary<string, SymbolTableEntry> operandIndexList = new Dictionary<string, SymbolTableEntry>();
         private Dictionary<string, SymbolTableEntry> symbolIndexList = new Dictionary<string, SymbolTableEntry>();
 
@@ -18,8 +18,9 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
         {
             get
             {
-                if (_step7SymbolTableEntrys == null)
+                if (!isLoaded)
                     LoadSymboltable();
+
                 return _step7SymbolTableEntrys;
             }
             set { _step7SymbolTableEntrys = value; }
@@ -31,7 +32,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
         {
             if (operand == null) return null;
 
-            if (_step7SymbolTableEntrys == null)
+            if (!isLoaded)
                 LoadSymboltable();
             string tmpname = operand.Replace(" ", "");
             SymbolTableEntry retval = null;
@@ -55,7 +56,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
 
         public SymbolTableEntry GetEntryFromSymbol(string symbol)
         {
-            if (_step7SymbolTableEntrys == null)
+            if (!isLoaded)
                 LoadSymboltable();
             string tmpname = symbol.Trim().ToUpper();
             SymbolTableEntry retval = null;
@@ -65,6 +66,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
 
         public SymbolTable()
         {
+            isLoaded = false;
             //Step7SymbolTableEntrys = new List<SymbolTableEntry>();
         }
 
@@ -76,7 +78,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
             {
                 try
                 {
-                    var dbfTbl = DBF.ParseDBF.ReadDBF(Folder + "SYMLIST.DBF", ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project)._DirSeperator);
+                    var dbfTbl = DBF.ParseDBF.ReadDBF(Folder + "SYMLIST.DBF", ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project).DirSeperator);
                     foreach (DataRow row in dbfTbl.Rows)
                     {
                         if (!(bool)row["DELETED_FLAG"] || showDeleted)
@@ -105,6 +107,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
                 catch (Exception ex)
                 {
                 }
+                isLoaded = true;
             }
         }
     }

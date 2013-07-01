@@ -24,7 +24,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
                 if (_bausteinDbf == null)
                     if (((Step7ProjectV5)Project)._ziphelper.FileExists(Folder + "BAUSTEIN.DBF"))
                         _bausteinDbf = DBF.ParseDBF.ReadDBF(Folder + "BAUSTEIN.DBF", ((Step7ProjectV5)Project)._ziphelper,
-                                                            ((Step7ProjectV5)Project)._DirSeperator);
+                                                            ((Step7ProjectV5)Project).DirSeperator);
                 return _bausteinDbf;
             }
         }
@@ -37,7 +37,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
                 if (_subblkDbf == null)
                     if (((Step7ProjectV5)Project)._ziphelper.FileExists(Folder + "SUBBLK.DBF"))
                         _subblkDbf = DBF.ParseDBF.ReadDBF(Folder + "SUBBLK.DBF", ((Step7ProjectV5)Project)._ziphelper,
-                                                          ((Step7ProjectV5)Project)._DirSeperator);
+                                                          ((Step7ProjectV5)Project).DirSeperator);
                 return _subblkDbf;
             }
         }
@@ -194,9 +194,9 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
                         ((Step7ProjectV5) Project).hasChanges = true;
 
                         if (KnowHowProtection)
-                            DBF.ParseDBF.WriteValue(Folder + "SUBBLK.DBF", "PASSWORD", dbfTbl.Rows.IndexOf(row), 3, ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project)._DirSeperator);
+                            DBF.ParseDBF.WriteValue(Folder + "SUBBLK.DBF", "PASSWORD", dbfTbl.Rows.IndexOf(row), 3, ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project).DirSeperator);
                         else
-                            DBF.ParseDBF.WriteValue(Folder + "SUBBLK.DBF", "PASSWORD", dbfTbl.Rows.IndexOf(row), 0, ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project)._DirSeperator);
+                            DBF.ParseDBF.WriteValue(Folder + "SUBBLK.DBF", "PASSWORD", dbfTbl.Rows.IndexOf(row), 0, ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project).DirSeperator);
                         break;
                     }
                 }
@@ -209,7 +209,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
 
             if (((Step7ProjectV5)Project)._ziphelper.FileExists(Folder + "BAUSTEIN.DBF"))
             {
-                var dbfTbl = DBF.ParseDBF.ReadDBF(Folder + "BAUSTEIN.DBF", ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project)._DirSeperator);
+                var dbfTbl = DBF.ParseDBF.ReadDBF(Folder + "BAUSTEIN.DBF", ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project).DirSeperator);
                 foreach (DataRow row in dbfTbl.Rows)
                 {
                     int objid = (int)row["ID"];
@@ -217,15 +217,15 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
                     if (objid == blkInfo.id)
                     {
                         ((Step7ProjectV5)Project).hasChanges = true;
-                        DBF.ParseDBF.WriteValue(Folder + "BAUSTEIN.DBF", "DELETED_FLAG", dbfTbl.Rows.IndexOf(row), false, ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project)._DirSeperator);
-                        DBF.ParseDBF.WriteValue(Folder + "BAUSTEIN.DBF", "NUMMER", dbfTbl.Rows.IndexOf(row), newBlockNumber, ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project)._DirSeperator);
+                        DBF.ParseDBF.WriteValue(Folder + "BAUSTEIN.DBF", "DELETED_FLAG", dbfTbl.Rows.IndexOf(row), false, ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project).DirSeperator);
+                        DBF.ParseDBF.WriteValue(Folder + "BAUSTEIN.DBF", "NUMMER", dbfTbl.Rows.IndexOf(row), newBlockNumber, ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project).DirSeperator);
                     }
                 }
             }
 
             if (((Step7ProjectV5)Project)._ziphelper.FileExists(Folder + "SUBBLK.DBF"))
             {
-                var dbfTbl = DBF.ParseDBF.ReadDBF(Folder + "SUBBLK.DBF", ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project)._DirSeperator);
+                var dbfTbl = DBF.ParseDBF.ReadDBF(Folder + "SUBBLK.DBF", ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project).DirSeperator);
                 foreach (DataRow row in dbfTbl.Rows)
                 {
                     int objid = (int)row["OBJECTID"];
@@ -233,8 +233,8 @@ namespace DotNetSiemensPLCToolBoxLibrary.DataTypes.Projectfolders.Step7V5
                     if (objid == blkInfo.id)
                     {
                         ((Step7ProjectV5)Project).hasChanges = true;
-                        DBF.ParseDBF.WriteValue(Folder + "SUBBLK.DBF", "DELETED_FLAG", dbfTbl.Rows.IndexOf(row), false, ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project)._DirSeperator);
-                        DBF.ParseDBF.WriteValue(Folder + "SUBBLK.DBF", "BLKNUMBER", dbfTbl.Rows.IndexOf(row), newBlockNumber, ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project)._DirSeperator);
+                        DBF.ParseDBF.WriteValue(Folder + "SUBBLK.DBF", "DELETED_FLAG", dbfTbl.Rows.IndexOf(row), false, ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project).DirSeperator);
+                        DBF.ParseDBF.WriteValue(Folder + "SUBBLK.DBF", "BLKNUMBER", dbfTbl.Rows.IndexOf(row), newBlockNumber, ((Step7ProjectV5)Project)._ziphelper, ((Step7ProjectV5)Project).DirSeperator);
                     }
                 }
             }

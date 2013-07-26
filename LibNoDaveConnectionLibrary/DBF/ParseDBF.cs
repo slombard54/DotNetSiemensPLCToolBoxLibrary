@@ -6,6 +6,7 @@
 using DotNetSiemensPLCToolBoxLibrary.DBF.Enums;
 using DotNetSiemensPLCToolBoxLibrary.DBF.Structures;
 using DotNetSiemensPLCToolBoxLibrary.DBF.Structures.DBT;
+using DotNetSiemensPLCToolBoxLibrary.DBF.Index.MDX;
 using DotNetSiemensPLCToolBoxLibrary.General;
 using System;
 using System.Collections;
@@ -277,7 +278,7 @@ namespace DotNetSiemensPLCToolBoxLibrary.DBF
 
 
             //TEST MDXFile
-            //MDXFile mdxFileObject = new MDXFile(dbfFile, _ziphelper, DirSeperator, true);
+            //MDXFile mdxFileObject = new MDXFile(dbfFile, ziphelper, dirSeperator, true);
 
         }
 
